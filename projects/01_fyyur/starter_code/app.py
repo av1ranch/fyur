@@ -1,61 +1,57 @@
 #----------------------------------------------------------------------------#
 # Imports
 #----------------------------------------------------------------------------#
-
+import os
 import json
+import sys
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
-from flask_moment import Moment
-from flask_sqlalchemy import SQLAlchemy
 import logging
 from logging import Formatter, FileHandler
+from flask import Flask, render_template, request, Response, flash, jsonify, redirect, url_for
+from flask_moment import Moment
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from extensions import db, migrate
+from models import Artist, Venue, Show  # Make sure this does not create a circular import
+from config import Config
 from flask_wtf import Form
 from forms import *
-#----------------------------------------------------------------------------#
-# App Config.
-#----------------------------------------------------------------------------#
-
-app = Flask(__name__)
-moment = Moment(app)
-app.config.from_object('config')
-db = SQLAlchemy(app)
-
-# TODO: connect to a local postgresql database
+from extensions import db, migrate
+from models import db, Artist, Venue, Show
 
 #----------------------------------------------------------------------------#
-# Models.
+# App Config. to avoid circular importing errors
 #----------------------------------------------------------------------------#
 
-class Venue(db.Model):
-    __tablename__ = 'Venue'
+# Import db and migrate from a separate extensions.py or directly initialize here if not using extensions.py
+from extensions import db, migrate
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    address = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
+def create_app():
+    app = Flask(__name__)
+    # Load configurations from a class in config.py
+    app.config.from_object('config.Config')
+    
+    # Initialize Flask extensions
+    moment = Moment(app)
+    db.init_app(app)
+    migrate.init_app(app, db)
 
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
+    SQLALCHEMY_DATABASE_URI = 'postgresql://aviranchigoda@localhost:5432/fyyur'
 
-class Artist(db.Model):
-    __tablename__ = 'Artist'
+    # Import models to ensure they are recognized by SQLAlchemy and Alembic
+    from models import Artist, Venue, Show
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
+    # Define routes and other app configurations here
 
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
+    return app
 
-# TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+# Create app instance by calling create_app
+app = create_app()
+
+# This condition is only true if the script is executed directly (not imported)
+if __name__ == '__main__':
+    app.run(debug=True)
 
 #----------------------------------------------------------------------------#
 # Filters.
